@@ -1,0 +1,904 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Finvest India Salary Projection Planner & SIP Step-Up Calculator</title>
+
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SheetJS for XLSX export -->
+  <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+
+  <style>
+    :root{
+      --bg: linear-gradient(180deg,#fff7ed,#eef2ff);
+      --card:#ffffff;
+      --accent1:#7c3aed;
+      --accent2:#06b6d4;
+      --accent3:#f97316;
+      --muted:#6b7280;
+      --glass: rgba(255,255,255,0.7);
+      --maxw:1200px;
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: var(--bg);
+      padding:20px;
+      color:#0f172a;
+      -webkit-font-smoothing:antialiased;
+      line-height:1.45;
+    }
+    .wrap{ max-width:var(--maxw); margin:0 auto; }
+    /* Top nav */
+    .nav{
+      display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:18px;
+    }
+    .brand{
+      display:flex; gap:12px; align-items:center;
+    }
+    .logo{
+      width:64px; height:64px; border-radius:12px; display:flex; align-items:center; justify-content:center;
+      background: linear-gradient(135deg,var(--accent1), var(--accent2));
+      box-shadow: 0 8px 30px rgba(99,102,241,0.12);
+      flex-shrink:0;
+    }
+    .brand h1{ margin:0; font-size:18px; letter-spacing:0.2px; }
+    .brand p{ margin:0; font-size:12px; color:var(--muted) }
+
+    .nav-links{ display:flex; gap:8px; align-items:center; }
+    .nav-links a{ text-decoration:none; color:inherit; padding:8px 10px; border-radius:8px; font-weight:700; font-size:13px; }
+    .nav-links a:hover{ background:rgba(15,23,42,0.04); }
+
+    .grid{
+      display:grid;
+      grid-template-columns: 320px 1fr;
+      gap:18px;
+      margin-top:6px;
+    }
+
+    .card{
+      background:var(--card);
+      border-radius:14px;
+      padding:16px;
+      box-shadow: 0 8px 30px rgba(15,23,42,0.04);
+      border: 1px solid rgba(15,23,42,0.03);
+    }
+    .field{ margin-bottom:12px; }
+    label{ display:block; font-size:13px; color:var(--muted); margin-bottom:6px; }
+    input[type="number"], input[type="text"], select{
+      width:100%; padding:10px 12px; border-radius:8px; border:1px solid #e6e9ee; font-size:14px;
+      outline:none;
+    }
+    .small{ font-size:12px; color:var(--muted); }
+
+    .tabs{
+      display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;
+    }
+    .tab{
+      padding:8px 12px; border-radius:999px; background:linear-gradient(90deg,#fff,#fff); cursor:pointer;
+      font-weight:700; border: 1px solid rgba(15,23,42,0.04);
+    }
+    .tab.active{ background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:white; box-shadow: 0 8px 20px rgba(6,182,212,0.12); }
+
+    .table-wrap{ overflow:auto; border-radius:10px; margin-top:8px; }
+    table{ width:100%; border-collapse:collapse; min-width:700px; font-size:13px; }
+    thead th{
+      position:sticky; top:0; background:linear-gradient(90deg,#eef2ff,#fff7ed);
+      text-align:left; padding:12px 10px; font-size:13px; color:#0f172a;
+    }
+    tbody td{ padding:10px; border-bottom:1px dashed rgba(15,23,42,0.04); }
+    .right{ text-align:right; font-variant-numeric:tabular-nums; }
+
+    .controls-row{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:8px; }
+
+    .btn{
+      padding:8px 10px; border-radius:10px; cursor:pointer; border:none; font-weight:700;
+    }
+    .btn.primary{ background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:white; box-shadow:0 8px 24px rgba(99,102,241,0.12); }
+    .btn.ghost{ background:transparent; border:1px solid rgba(15,23,42,0.06); }
+
+    .chart-card{ padding:14px; border-radius:12px; background:linear-gradient(180deg,rgba(79,70,229,0.03),rgba(6,182,212,0.02)); }
+
+    @media (max-width:980px){
+      .grid{ grid-template-columns: 1fr; }
+      table{ min-width:600px; }
+    }
+
+    .note{ font-size:12px; color:var(--muted); margin-top:6px; }
+    .color-pill{ display:inline-block; padding:6px 10px; border-radius:999px; font-size:12px; color:white; font-weight:700; margin-right:6px; }
+    .c1{ background:linear-gradient(90deg,#7c3aed,#06b6d4); }
+    .c2{ background:linear-gradient(90deg,#f97316,#f43f5e); }
+
+    /* Benefits / Steps style */
+    .benefits{ display:grid; grid-template-columns: repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin-top:12px; }
+    .benefit{
+      background:linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,255,255,0.85));
+      border-radius:12px; padding:12px; box-shadow:0 6px 18px rgba(15,23,42,0.03);
+    }
+    .benefit h4{ margin:4px 0; font-size:14px; }
+    .benefit p{ margin:0; font-size:13px; color:var(--muted); }
+
+    /* footer small */
+    footer{ margin-top:18px; text-align:center; color:var(--muted); font-size:13px; }
+
+    /* Print / PDF friendly */
+    @media print {
+      body{ background:white; padding:0; }
+      .nav-links, .controls-row, .btn, input, select, .tabs{ display:none !important; } /* hide interactive controls */
+      .wrap{ max-width:100%; padding:8px; }
+      .card{ box-shadow:none; border: none; border-radius:0; padding:6px; }
+      thead th{ position:static; background:#f7f7f7 !important; -webkit-print-color-adjust:exact; }
+      canvas{ page-break-inside:avoid; }
+      .table-wrap{ overflow:visible; }
+      footer{ display:none; }
+      .logo{ box-shadow:none; }
+      .brand h1{ font-size:16px }
+    }
+
+    /* small helpers */
+    .muted { color:var(--muted); font-size:13px; }
+    .top-actions{ display:flex; gap:8px; align-items:center; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="nav">
+      <div class="brand">
+        <div class="logo" title="Finvest India">
+          <!-- Finvest logo: stylized F -->
+          <svg width="44" height="44" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="0" y="0" width="48" height="48" rx="10" fill="white" opacity="0.02"/>
+            <defs>
+              <linearGradient id="g1" x1="0" x2="1" y1="0" y2="1">
+                <stop offset="0" stop-color="#7c3aed"/>
+                <stop offset="1" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+            <path d="M14 34V14h10a6 6 0 1 1 0 12H18v8" stroke="url(#g1)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+        <div>
+          <h1>Finvest India Salary Projection Planner & SIP Step-Up Calculator</h1>
+          <p class="muted">Plan salary growth, model SIP step-ups, visualize & export — made for Indian investors.</p>
+        </div>
+      </div>
+
+      <div class="nav-links" aria-hidden="true">
+        <a href="#calculator">Calculator</a>
+        <a href="#benefits">Benefits</a>
+        <a href="#howto">How to use</a>
+        <a href="#about">About</a>
+      </div>
+    </div>
+
+    <div id="calculator" class="grid">
+      <!-- left panel: inputs -->
+      <div class="card" aria-label="Inputs">
+        <div class="field">
+          <label>Start financial year (first shown)</label>
+          <input id="startYear" type="number" value="2025" min="2000" />
+          <div class="small">Financial years will be shown as e.g. 2025-26</div>
+        </div>
+
+        <div class="field">
+          <label>Starting Annual CTC (₹)</label>
+          <input id="startCtc" type="number" value="43333" min="0" />
+        </div>
+
+        <div class="field">
+          <label>Years to project</label>
+          <input id="years" type="number" value="20" min="1" max="50" />
+        </div>
+
+        <div class="field">
+          <label>Default annual hike % (applies to new years; editable per-year)</label>
+          <input id="defaultHike" type="number" value="12" min="-50" max="200" step="0.1"/>
+          <div class="small">You can override % for each year in the Hikes tab.</div>
+        </div>
+
+        <hr style="margin:12px 0; border:none; border-top:1px solid rgba(15,23,42,0.04)" />
+
+        <h3 style="margin:8px 0 10px 0">SIP Step-Up Defaults</h3>
+
+        <div class="field">
+          <label>Current monthly SIP amount (₹)</label>
+          <input id="sipStart" type="number" value="2000" min="0" />
+        </div>
+
+        <div class="field">
+          <label>Annual step-up percentage for SIP (%)</label>
+          <input id="sipStep" type="number" value="10" min="0" max="100" step="0.1" />
+        </div>
+
+        <div class="field">
+          <label>Expected annual return on SIP (%)</label>
+          <input id="sipReturn" type="number" value="12" min="-50" max="100" step="0.1" />
+          <div class="small">Assumes yearly compounding; yearly model: balance = balance*(1+r) + annual invested.</div>
+        </div>
+
+        <div style="margin-top:10px;" class="top-actions">
+          <button class="btn primary" id="recalcBtn" title="Recalculate">Recalculate</button>
+          <button class="btn ghost" id="resetBtn" title="Reset to defaults">Reset</button>
+          <button class="btn ghost" id="printBtn" title="Print / Save as PDF">Print / PDF</button>
+        </div>
+
+        <div class="note">Tip: After recalculation, go to 'Hikes' tab if you want to edit individual year's hike %. Charts and tables update live.</div>
+
+        <div style="margin-top:12px;">
+          <div class="color-pill c1">Salary</div><div class="color-pill c2">SIP</div>
+        </div>
+      </div>
+
+      <!-- right panel: tabs & results -->
+      <div>
+        <div class="card" style="margin-bottom:12px;">
+          <div class="tabs" id="mainTabs" role="tablist" aria-label="Main tabs">
+            <div class="tab active" data-tab="summary" role="tab" aria-selected="true">Summary</div>
+            <div class="tab" data-tab="monthly" role="tab">Monthly CTC</div>
+            <div class="tab" data-tab="hikes" role="tab">Hikes</div>
+            <div class="tab" data-tab="sip" role="tab">SIP Planner</div>
+            <div class="tab" data-tab="charts" role="tab">Charts</div>
+          </div>
+
+          <div class="tabs-content">
+            <!-- SUMMARY -->
+            <div class="tab-panel" id="summary" style="display:block;">
+              <div class="controls-row">
+                <div class="small">Summary table shows Year, Annual CTC, Monthly CTC, Annual Increase (₹), and Cumulative CTC</div>
+                <div style="flex:1"></div>
+                <div class="top-actions">
+                  <button class="btn ghost" id="downloadSummary">Download CSV</button>
+                  <button class="btn ghost" id="downloadSummaryXlsx">Download Excel</button>
+                </div>
+              </div>
+
+              <div class="table-wrap">
+                <table id="summaryTable" aria-label="Summary table">
+                  <thead>
+                    <tr>
+                      <th>Financial Year</th>
+                      <th class="right">Annual CTC (₹)</th>
+                      <th class="right">Monthly CTC (₹)</th>
+                      <th class="right">Annual Increase (₹)</th>
+                      <th class="right">Cumulative CTC (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- MONTHLY -->
+            <div class="tab-panel" id="monthly" style="display:none;">
+              <div class="controls-row">
+                <div class="small">Monthly breakup shown per year (Annual/12). Use for monthly budgeting or salary discussions.</div>
+                <div style="flex:1"></div>
+                <div class="top-actions">
+                  <button class="btn ghost" id="downloadMonthly">Download CSV</button>
+                  <button class="btn ghost" id="downloadMonthlyXlsx">Download Excel</button>
+                </div>
+              </div>
+              <div class="table-wrap">
+                <table id="monthlyTable" aria-label="Monthly table">
+                  <thead>
+                    <tr>
+                      <th>Financial Year</th>
+                      <th class="right">Monthly CTC (₹)</th>
+                      <th class="right">Monthly CTC (rounded) (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- HIKES -->
+            <div class="tab-panel" id="hikes" style="display:none;">
+              <div class="controls-row">
+                <div class="small">Edit % hikes per year (over previous year). Type a value and press 'Update Hike' to apply.</div>
+                <div style="flex:1"></div>
+                <div class="top-actions">
+                  <button class="btn ghost" id="downloadHikes">Download CSV</button>
+                  <button class="btn ghost" id="downloadHikesXlsx">Download Excel</button>
+                </div>
+              </div>
+
+              <div style="display:flex; gap:8px; margin-bottom:8px; align-items:center;">
+                <input id="editYearIdx" type="number" placeholder="Year #" style="width:120px; padding:8px; border-radius:8px; border:1px solid #e6e9ee;" />
+                <input id="editHikeVal" type="number" placeholder="Hike % (eg. 15)" style="width:160px; padding:8px; border-radius:8px; border:1px solid #e6e9ee;" />
+                <button class="btn primary" id="applyHike">Update Hike</button>
+                <button class="btn ghost" id="resetHikes">Reset Hikes to Default</button>
+              </div>
+
+              <div class="table-wrap">
+                <table id="hikesTable" aria-label="Hikes table">
+                  <thead>
+                    <tr>
+                      <th>Year #</th>
+                      <th>Financial Year</th>
+                      <th class="right">Hike %</th>
+                      <th class="right">Annual CTC (₹)</th>
+                      <th class="right">Hike Amount from Prev (₹)</th>
+                      <th class="right">Cumulative Hike % (from start)</th>
+                      <th class="right">Cumulative Hike ₹ (from start)</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- SIP -->
+            <div class="tab-panel" id="sip" style="display:none;">
+              <div class="controls-row">
+                <div class="small">SIP step-up projection. Annual invested = monthly * 12 (monthly increased annually by step-up %). Balance estimated with yearly compound model.</div>
+                <div style="flex:1"></div>
+                <div class="top-actions">
+                  <button class="btn ghost" id="downloadSip">Download CSV</button>
+                  <button class="btn ghost" id="downloadSipXlsx">Download Excel</button>
+                </div>
+              </div>
+
+              <div class="table-wrap">
+                <table id="sipTable" aria-label="SIP table">
+                  <thead>
+                    <tr>
+                      <th>Year #</th>
+                      <th>Financial Year</th>
+                      <th class="right">Monthly SIP (₹)</th>
+                      <th class="right">Annual Invested (₹)</th>
+                      <th class="right">Balance at Year End (₹)</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- CHARTS -->
+            <div class="tab-panel" id="charts" style="display:none;">
+              <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                <div class="chart-card" style="flex:1; min-width:320px;">
+                  <h4 style="margin:0 0 6px 0">CTC Growth (Annual & Cumulative)</h4>
+                  <canvas id="ctcChart" height="200" aria-label="CTC growth chart"></canvas>
+                </div>
+                <div class="chart-card" style="flex:1; min-width:320px;">
+                  <h4 style="margin:0 0 6px 0">SIP (Annual Invested vs Balance)</h4>
+                  <canvas id="sipChart" height="200" aria-label="SIP chart"></canvas>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+            <div>
+              <strong>Assumptions</strong>
+              <div class="small">Annual hikes apply at the start of each financial year, monthly CTC = annual/12. SIP model is yearly: balance grows at annual return then new annual invested amount is added at year end.</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="small">Made with ❤ — tweak inputs and export results</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Benefits & How to use -->
+    <section id="benefits" style="margin-top:14px;">
+      <div class="card">
+        <h3 style="margin-top:0">Why use Finvest India Planner?</h3>
+        <div class="benefits">
+          <div class="benefit">
+            <h4>Plan salary growth</h4>
+            <p class="muted">Project your CTC over years using realistic hike assumptions. Understand cumulative earnings and plan major life decisions.</p>
+          </div>
+          <div class="benefit">
+            <h4>SIP step-up strategy</h4>
+            <p class="muted">Model automatic annual SIP increases and see long-term compounding — helpful to beat inflation and increase corpus.</p>
+          </div>
+          <div class="benefit">
+            <h4>Export & share</h4>
+            <p class="muted">Download CSV or Excel reports for presentations, HR discussions, or personal recordkeeping.</p>
+          </div>
+          <div class="benefit">
+            <h4>Print / PDF friendly</h4>
+            <p class="muted">Print a clean report or save as PDF for meetings and financial planning documents.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="howto" style="margin-top:12px;">
+      <div class="card">
+        <h3 style="margin-top:0">How to use — Quick steps</h3>
+        <ol style="margin:0 0 0 18px; color:var(--muted)">
+          <li>Enter start financial year and your current Annual CTC (₹).</li>
+          <li>Set years to project and default annual hike % (you can override per-year in Hikes tab).</li>
+          <li>Enter current monthly SIP, step-up % and expected annual return for SIP projection.</li>
+          <li>Click <strong>Recalculate</strong> — tables and charts update instantly.</li>
+          <li>Use <strong>Download Excel</strong> or <strong>Download CSV</strong> to export, or click <strong>Print / PDF</strong> to save a printable report.</li>
+        </ol>
+      </div>
+    </section>
+
+    <section id="about" style="margin-top:12px;">
+      <div class="card">
+        <h3 style="margin-top:0">About Finvest India</h3>
+        <p class="muted" style="margin-bottom:6px">Finvest India provides simple tools for personal finance planning — salary projection, SIP strategy modelling and straightforward exportable reports to help you make data-driven decisions.</p>
+        <p class="muted" style="margin:0">Use this planner as a baseline for conversations with advisors or for your own planning. Not financial advice — adapt assumptions to match your situation.</p>
+      </div>
+    </section>
+
+    <footer>
+      <div class="muted">© Finvest India — Built for clarity. Inputs are illustrative; adjust to your reality.</div>
+    </footer>
+  </div>
+
+<script>
+/* -------------------------
+   Utilities & Formatting
+   ------------------------- */
+const nf = (v, digits=0) => new Intl.NumberFormat('en-IN',{maximumFractionDigits:digits, minimumFractionDigits: digits>0?2:0}).format(Math.round(v*100)/100);
+function to2(v){ return Math.round(v*100)/100; }
+
+/* -------------------------
+   State
+   ------------------------- */
+let state = {
+  startYear: 2025,
+  years: 20,
+  startCtc: 43333,
+  defaultHike: 12,
+  hikes: [],
+  yearlyCtc: [],
+  sip: {
+    startMonthly: 2000,
+    stepUpPct: 10,
+    annualReturnPct: 12,
+    perYear: []
+  }
+};
+
+/* DOM refs */
+const el = id => document.getElementById(id);
+const tbodySummary = document.querySelector("#summaryTable tbody");
+const tbodyMonthly = document.querySelector("#monthlyTable tbody");
+const tbodyHikes = document.querySelector("#hikesTable tbody");
+const tbodySip = document.querySelector("#sipTable tbody");
+
+const startYearInput = el("startYear");
+const yearsInput = el("years");
+const startCtcInput = el("startCtc");
+const defaultHikeInput = el("defaultHike");
+const sipStartInput = el("sipStart");
+const sipStepInput = el("sipStep");
+const sipReturnInput = el("sipReturn");
+
+const recalcBtn = el("recalcBtn");
+const resetBtn = el("resetBtn");
+const printBtn = el("printBtn");
+const applyHikeBtn = el("applyHike");
+const editYearIdx = el("editYearIdx");
+const editHikeVal = el("editHikeVal");
+const resetHikesBtn = el("resetHikes");
+
+/* charts */
+let ctcChart=null, sipChart=null;
+
+/* -------------------------
+   State init & compute
+   ------------------------- */
+function initStateFromInputs(){
+  state.startYear = parseInt(startYearInput.value) || 2025;
+  state.years = Math.max(1, Math.min(50, parseInt(yearsInput.value) || 20));
+  state.startCtc = parseFloat(startCtcInput.value) || 0;
+  state.defaultHike = parseFloat(defaultHikeInput.value) || 0;
+
+  state.sip.startMonthly = parseFloat(sipStartInput.value) || 0;
+  state.sip.stepUpPct = parseFloat(sipStepInput.value) || 0;
+  state.sip.annualReturnPct = parseFloat(sipReturnInput.value) || 0;
+
+  if(!state.hikes || state.hikes.length !== state.years){
+    state.hikes = Array.from({length: state.years}, (_,i)=> state.defaultHike);
+  }
+}
+
+function computeCtc(){
+  const yrs = state.years;
+  const ctcs = [];
+  let prev = state.startCtc;
+  ctcs.push(to2(prev));
+  for(let i=1;i<yrs;i++){
+    const hike = state.hikes[i] !== undefined ? parseFloat(state.hikes[i]) : state.defaultHike;
+    const cur = to2(prev * (1 + hike/100));
+    ctcs.push(cur);
+    prev = cur;
+  }
+  state.yearlyCtc = ctcs;
+}
+
+function computeSip(){
+  const years = state.years;
+  const startMonthly = state.sip.startMonthly;
+  const step = state.sip.stepUpPct / 100;
+  const r = state.sip.annualReturnPct / 100;
+
+  let monthly = startMonthly;
+  let balance = 0;
+  const arr = [];
+  for(let i=0;i<years;i++){
+    const annualInvested = to2(monthly * 12);
+    balance = to2(balance * (1 + r) + annualInvested);
+    arr.push({
+      yearIdx: i+1,
+      yearLabel: yearLabel(i),
+      monthly: to2(monthly),
+      annualInvested,
+      balance
+    });
+    monthly = to2(monthly * (1 + step));
+  }
+  state.sip.perYear = arr;
+}
+
+/* -------------------------
+   Rendering
+   ------------------------- */
+function clearTbody(tbody){ while(tbody.firstChild) tbody.removeChild(tbody.firstChild); }
+function yearLabel(i){
+  const sy = state.startYear + i;
+  const ey = (sy + 1) % 100;
+  return `${sy}-${ey.toString().padStart(2,'0')}`;
+}
+
+function renderSummary(){
+  clearTbody(tbodySummary);
+  let cumulative = 0;
+  for(let i=0;i<state.yearlyCtc.length;i++){
+    const yr = yearLabel(i);
+    const annual = state.yearlyCtc[i];
+    const monthly = to2(annual / 12);
+    const prev = i===0 ? 0 : state.yearlyCtc[i-1];
+    const increase = i===0 ? 0 : to2(annual - prev);
+    cumulative = to2(cumulative + annual);
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${yr}</td>
+                    <td class="right">${nf(annual)}</td>
+                    <td class="right">${nf(monthly,2)}</td>
+                    <td class="right">${nf(increase)}</td>
+                    <td class="right">${nf(cumulative)}</td>`;
+    tbodySummary.appendChild(tr);
+  }
+}
+
+function renderMonthly(){
+  clearTbody(tbodyMonthly);
+  for(let i=0;i<state.yearlyCtc.length;i++){
+    const yr = yearLabel(i);
+    const monthly = to2(state.yearlyCtc[i] / 12);
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${yr}</td>
+                    <td class="right">${nf(monthly,2)}</td>
+                    <td class="right">${nf(Math.round(monthly))}</td>`;
+    tbodyMonthly.appendChild(tr);
+  }
+}
+
+function renderHikes(){
+  clearTbody(tbodyHikes);
+  const start = state.yearlyCtc[0];
+  for(let i=0;i<state.yearlyCtc.length;i++){
+    const yrIdx = i+1;
+    const yr = yearLabel(i);
+    const hikePct = state.hikes[i] !== undefined ? parseFloat(state.hikes[i]) : state.defaultHike;
+    const annual = state.yearlyCtc[i];
+    const prev = i===0 ? state.startCtc : state.yearlyCtc[i-1];
+    const hikeAmt = i===0 ? 0 : to2(annual - prev);
+    const cumHikePct = to2(((annual - start) / start) * 100);
+    const cumHikeAmt = to2(annual - start);
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${yrIdx}</td>
+                    <td>${yr}</td>
+                    <td class="right">${nf(hikePct,2)}%</td>
+                    <td class="right">${nf(annual)}</td>
+                    <td class="right">${nf(hikeAmt)}</td>
+                    <td class="right">${nf(cumHikePct,2)}%</td>
+                    <td class="right">${nf(cumHikeAmt)}</td>`;
+    tbodyHikes.appendChild(tr);
+  }
+}
+
+function renderSip(){
+  clearTbody(tbodySip);
+  for(const row of state.sip.perYear){
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${row.yearIdx}</td>
+                    <td>${row.yearLabel}</td>
+                    <td class="right">${nf(row.monthly,2)}</td>
+                    <td class="right">${nf(row.annualInvested)}</td>
+                    <td class="right">${nf(row.balance)}</td>`;
+    tbodySip.appendChild(tr);
+  }
+}
+
+/* -------------------------
+   Charts
+   ------------------------- */
+function renderCharts(){
+  const labels = state.yearlyCtc.map((_,i)=> yearLabel(i));
+  const annuals = state.yearlyCtc.map(v=> v);
+  const cumulatives = (()=>{
+    const arr=[]; let s=0;
+    for(const v of annuals){ s = to2(s+v); arr.push(s); }
+    return arr;
+  })();
+
+  const sipLabels = state.sip.perYear.map(r=> r.yearLabel);
+  const sipInvested = state.sip.perYear.map(r=> r.annualInvested);
+  const sipBalance = state.sip.perYear.map(r=> r.balance);
+
+  if(ctcChart) ctcChart.destroy();
+  if(sipChart) sipChart.destroy();
+
+  const ctx1 = document.getElementById('ctcChart').getContext('2d');
+  ctcChart = new Chart(ctx1, {
+    data:{
+      labels,
+      datasets:[
+        {
+          type:'bar',
+          label:'Annual CTC (₹)',
+          data: annuals,
+          backgroundColor:'rgba(124,58,237,0.6)',
+          borderColor:'rgba(124,58,237,1)',
+          yAxisID:'y'
+        },
+        {
+          type:'line',
+          label:'Cumulative CTC (₹)',
+          data: cumulatives,
+          borderColor:'rgba(6,182,212,1)',
+          backgroundColor:'rgba(6,182,212,0.2)',
+          tension:0.3,
+          yAxisID:'y'
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      interaction:{mode:'index', intersect:false},
+      scales:{ y:{ beginAtZero:true, ticks:{ callback: v=> new Intl.NumberFormat('en-IN').format(v) } } }
+    }
+  });
+
+  const ctx2 = document.getElementById('sipChart').getContext('2d');
+  sipChart = new Chart(ctx2, {
+    data:{
+      labels: sipLabels,
+      datasets:[
+        {
+          type:'bar',
+          label:'Annual Invested (₹)',
+          data: sipInvested,
+          backgroundColor:'rgba(249,115,22,0.6)',
+          borderColor:'rgba(249,115,22,1)'
+        },
+        {
+          type:'line',
+          label:'Balance at Year End (₹)',
+          data: sipBalance,
+          borderColor:'rgba(16,185,129,1)',
+          backgroundColor:'rgba(16,185,129,0.2)',
+          tension:0.3,
+          fill:false
+        }
+      ]
+    },
+    options:{
+      responsive:true,
+      interaction:{mode:'index', intersect:false},
+      scales:{ y:{ beginAtZero:true, ticks:{ callback: v=> new Intl.NumberFormat('en-IN').format(v) } } }
+    }
+  });
+}
+
+/* -------------------------
+   Exports: CSV already implemented earlier
+   New: XLSX export (SheetJS)
+   ------------------------- */
+function downloadCSV(filename, header, rows){
+  let csv = header.join(',') + '\n';
+  for(const r of rows){
+    const line = r.map(cell => {
+      if(typeof cell === 'string' && cell.includes(',')) return `"${cell.replace(/"/g,'""')}"`;
+      return cell;
+    }).join(',');
+    csv += line + '\n';
+  }
+  const blob = new Blob([csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+}
+
+/* XLSX export helper using SheetJS */
+function downloadXLSX(filename, sheets){
+  // sheets: { sheetName: { header: [...], rows: [[...],[...]] } }
+  const wb = XLSX.utils.book_new();
+  for(const [name, data] of Object.entries(sheets)){
+    const sheetRows = [data.header, ...data.rows];
+    const ws = XLSX.utils.aoa_to_sheet(sheetRows);
+    XLSX.utils.book_append_sheet(wb, ws, name.substring(0,31)); // sheet name limit
+  }
+  XLSX.writeFile(wb, filename);
+}
+
+/* hookup buttons */
+el('downloadSummary').addEventListener('click', ()=>{
+  const header = ['Financial Year','Annual CTC (Rs)','Monthly CTC (Rs)','Annual Increase (Rs)','Cumulative CTC (Rs)'];
+  const rows = [];
+  let cumulative = 0;
+  for(let i=0;i<state.yearlyCtc.length;i++){
+    const yr = yearLabel(i);
+    const annual = state.yearlyCtc[i];
+    const monthly = to2(annual/12);
+    const prev = i===0 ? 0 : state.yearlyCtc[i-1];
+    const increase = i===0 ? 0 : to2(annual - prev);
+    cumulative = to2(cumulative + annual);
+    rows.push([yr, annual, monthly, increase, cumulative]);
+  }
+  downloadCSV('summary_ctc_projection.csv', header, rows);
+});
+el('downloadMonthly').addEventListener('click', ()=>{
+  const header = ['Financial Year','Monthly CTC (Rs)','Monthly Rounded (Rs)'];
+  const rows = state.yearlyCtc.map((annual,i)=> [yearLabel(i), to2(annual/12), Math.round(annual/12)]);
+  downloadCSV('monthly_ctc.csv', header, rows);
+});
+el('downloadHikes').addEventListener('click', ()=>{
+  const header = ['Year#','Financial Year','Hike %','Annual CTC (Rs)','Hike Amount (Rs)','Cumulative Hike %','Cumulative Hike Rs'];
+  const rows = [];
+  const start = state.yearlyCtc[0];
+  for(let i=0;i<state.yearlyCtc.length;i++){
+    const yrIdx = i+1;
+    const yr = yearLabel(i);
+    const hikePct = state.hikes[i];
+    const annual = state.yearlyCtc[i];
+    const prev = i===0 ? start : state.yearlyCtc[i-1];
+    const hikeAmt = i===0 ? 0 : to2(annual - prev);
+    const cumPct = to2(((annual - start)/start)*100);
+    const cumAmt = to2(annual - start);
+    rows.push([yrIdx, yr, hikePct, annual, hikeAmt, cumPct, cumAmt]);
+  }
+  downloadCSV('hikes_ctc.csv', header, rows);
+});
+el('downloadSip').addEventListener('click', ()=>{
+  const header = ['Year#','Financial Year','Monthly SIP (Rs)','Annual Invested (Rs)','Balance at Year End (Rs)'];
+  const rows = state.sip.perYear.map(r => [r.yearIdx, r.yearLabel, r.monthly, r.annualInvested, r.balance]);
+  downloadCSV('sip_projection.csv', header, rows);
+});
+
+/* XLSX buttons */
+el('downloadSummaryXlsx').addEventListener('click', ()=>{
+  const header = ['Financial Year','Annual CTC (Rs)','Monthly CTC (Rs)','Annual Increase (Rs)','Cumulative CTC (Rs)'];
+  const rows = [];
+  let cumulative = 0;
+  for(let i=0;i<state.yearlyCtc.length;i++){
+    const yr = yearLabel(i);
+    const annual = state.yearlyCtc[i];
+    const monthly = to2(annual/12);
+    const prev = i===0 ? 0 : state.yearlyCtc[i-1];
+    const increase = i===0 ? 0 : to2(annual - prev);
+    cumulative = to2(cumulative + annual);
+    rows.push([yr, annual, monthly, increase, cumulative]);
+  }
+  downloadXLSX('finvest_summary.xlsx', { 'Summary': { header, rows } });
+});
+el('downloadMonthlyXlsx').addEventListener('click', ()=>{
+  const header = ['Financial Year','Monthly CTC (Rs)','Monthly Rounded (Rs)'];
+  const rows = state.yearlyCtc.map((annual,i)=> [yearLabel(i), to2(annual/12), Math.round(annual/12)]);
+  downloadXLSX('finvest_monthly.xlsx', { 'Monthly': { header, rows } });
+});
+el('downloadHikesXlsx').addEventListener('click', ()=>{
+  const header = ['Year#','Financial Year','Hike %','Annual CTC (Rs)','Hike Amount (Rs)','Cumulative Hike %','Cumulative Hike Rs'];
+  const rows = [];
+  const start = state.yearlyCtc[0];
+  for(let i=0;i<state.yearlyCtc.length;i++){
+    const yrIdx = i+1;
+    const yr = yearLabel(i);
+    const hikePct = state.hikes[i];
+    const annual = state.yearlyCtc[i];
+    const prev = i===0 ? start : state.yearlyCtc[i-1];
+    const hikeAmt = i===0 ? 0 : to2(annual - prev);
+    const cumPct = to2(((annual - start)/start)*100);
+    const cumAmt = to2(annual - start);
+    rows.push([yrIdx, yr, hikePct, annual, hikeAmt, cumPct, cumAmt]);
+  }
+  downloadXLSX('finvest_hikes.xlsx', { 'Hikes': { header, rows } });
+});
+el('downloadSipXlsx').addEventListener('click', ()=>{
+  const header = ['Year#','Financial Year','Monthly SIP (Rs)','Annual Invested (Rs)','Balance at Year End (Rs)'];
+  const rows = state.sip.perYear.map(r => [r.yearIdx, r.yearLabel, r.monthly, r.annualInvested, r.balance]);
+  downloadXLSX('finvest_sip.xlsx', { 'SIP': { header, rows } });
+});
+
+/* -------------------------
+   Interactions: tabs & recalc
+   ------------------------- */
+document.querySelectorAll('.tab').forEach(t => {
+  t.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    t.classList.add('active');
+    const tab = t.dataset.tab;
+    document.querySelectorAll('.tab-panel').forEach(p=> p.style.display = 'none');
+    document.getElementById(tab).style.display = 'block';
+    if(tab === 'charts') renderCharts();
+  });
+});
+
+recalcBtn.addEventListener('click', () => { doFullRecalc(); });
+resetBtn.addEventListener('click', ()=>{
+  startYearInput.value = 2025;
+  yearsInput.value = 20;
+  startCtcInput.value = 43333;
+  defaultHikeInput.value = 12;
+  sipStartInput.value = 2000;
+  sipStepInput.value = 10;
+  sipReturnInput.value = 12;
+  doFullRecalc();
+});
+printBtn.addEventListener('click', ()=> window.print());
+
+applyHikeBtn.addEventListener('click', ()=>{
+  const idx = parseInt(editYearIdx.value);
+  const val = parseFloat(editHikeVal.value);
+  if(!idx || isNaN(val)) { alert('Enter Year # and Hike % to apply. Year # starts at 1 for the first displayed year.'); return; }
+  const zeroBased = idx - 1;
+  if(zeroBased < 0 || zeroBased >= state.years) { alert('Year # out of range'); return; }
+  state.hikes[zeroBased] = val;
+  doFullRecalc();
+});
+resetHikesBtn.addEventListener('click', ()=>{
+  state.hikes = Array.from({length: state.years}, ()=> state.defaultHike);
+  doFullRecalc();
+});
+
+/* -------------------------
+   Main recalculation flow
+   ------------------------- */
+function doFullRecalc(){
+  initStateFromInputs();
+  computeCtc();
+  computeSip();
+  renderSummary();
+  renderMonthly();
+  renderHikes();
+  renderSip();
+  const active = document.querySelector('.tab.active').dataset.tab;
+  if(active === 'charts') renderCharts();
+}
+
+/* initialize */
+(function(){
+  initStateFromInputs();
+  state.hikes = Array.from({length: state.years}, (_,i)=> state.defaultHike);
+  computeCtc();
+  computeSip();
+  renderSummary();
+  renderMonthly();
+  renderHikes();
+  renderSip();
+  renderCharts();
+})();
+</script>
+</body>
+</html>
