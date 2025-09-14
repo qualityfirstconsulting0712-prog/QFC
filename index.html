@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Salary Projection Planner</title>
+  <title>Salary Projection</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
 
   <!-- Tailwind CSS -->
@@ -15,19 +15,17 @@
   <!-- Recharts -->
   <script src="https://unpkg.com/recharts/umd/Recharts.min.js"></script>
 
-  <!-- Babel for JSX -->
+  <!-- Babel -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
-<body class="bg-gray-100 min-h-screen flex items-center justify-center p-4">
-  <div id="root" class="w-full max-w-5xl"></div>
+<body class="bg-gray-100 p-6">
+  <div id="root"></div>
 
   <script type="text/babel">
     const { useState, useEffect } = React;
-    const {
-      LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
-    } = Recharts;
+    const { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } = Recharts;
 
-    function SalaryProjectionApp() {
+    function App() {
       const startYear = 2025;
       const years = 20;
       const startMonthly = 43333;
@@ -38,68 +36,58 @@
       useEffect(() => {
         let rows = [];
         let monthly = startMonthly;
-
         for (let i = 0; i < years; i++) {
           const year = startYear + i;
           const annual = monthly * 12;
-          rows.push({
-            year,
-            monthly: Math.round(monthly),
-            annual: Math.round(annual),
-          });
-          monthly = monthly * (1 + hike);
+          rows.push({ year, monthly: Math.round(monthly), annual: Math.round(annual) });
+          monthly *= (1 + hike);
         }
-
         setData(rows);
       }, []);
 
       return (
-        <div className="bg-white p-6 rounded-2xl shadow-lg">
-          <h1 className="text-3xl font-bold text-indigo-600 mb-6 text-center">
-            💼 Salary Projection (20 Years, 12% Hike)
+        <div className="bg-white p-6 rounded-xl shadow-lg max-w-4xl mx-auto">
+          <h1 className="text-2xl font-bold text-indigo-600 mb-6 text-center">
+            💼 Salary Projection (12% Hike)
           </h1>
 
           {/* Chart */}
-          <div className="h-80 mb-8">
+          <div className="h-80 mb-6">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={data}>
                 <CartesianGrid strokeDasharray="3 3" />
                 <XAxis dataKey="year" />
                 <YAxis />
                 <Tooltip />
-                <Legend />
                 <Line type="monotone" dataKey="annual" stroke="#4f46e5" name="Annual CTC" />
               </LineChart>
             </ResponsiveContainer>
           </div>
 
           {/* Table */}
-          <div className="overflow-x-auto">
-            <table className="table-auto w-full border-collapse border border-gray-300 text-sm">
-              <thead className="bg-indigo-100">
-                <tr>
-                  <th className="border border-gray-300 px-3 py-2">Year</th>
-                  <th className="border border-gray-300 px-3 py-2">Monthly (₹)</th>
-                  <th className="border border-gray-300 px-3 py-2">Annual (₹)</th>
+          <table className="w-full border border-gray-300 text-sm">
+            <thead className="bg-indigo-100">
+              <tr>
+                <th className="border px-2 py-1">Year</th>
+                <th className="border px-2 py-1">Monthly (₹)</th>
+                <th className="border px-2 py-1">Annual (₹)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {data.map((row) => (
+                <tr key={row.year} className="text-center">
+                  <td className="border px-2 py-1">{row.year}</td>
+                  <td className="border px-2 py-1">{row.monthly.toLocaleString()}</td>
+                  <td className="border px-2 py-1">{row.annual.toLocaleString()}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {data.map((row) => (
-                  <tr key={row.year} className="text-center">
-                    <td className="border border-gray-300 px-3 py-2">{row.year}</td>
-                    <td className="border border-gray-300 px-3 py-2">{row.monthly.toLocaleString()}</td>
-                    <td className="border border-gray-300 px-3 py-2 font-medium">{row.annual.toLocaleString()}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       );
     }
 
-    ReactDOM.createRoot(document.getElementById("root")).render(<SalaryProjectionApp />);
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
   </script>
 </body>
 </html>
-
